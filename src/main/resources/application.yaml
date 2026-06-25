@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    # Replace 'localhost', '5432', and 'your_database_name' with your actual database details
+    url: jdbc:postgresql://localhost:5432/acct_db1
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      # 'update' automatically creates or modifies database tables based on your Java entities.
+      # Change to 'validate' or 'none' in production.
+      ddl-auto: update
+
+    # Shows the executed SQL queries in the IntelliJ console (very helpful for debugging)
+    show-sql: true
+
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
