@@ -1,7 +1,10 @@
+server:
+  port: 8082
+
 spring:
   datasource:
     # Replace 'localhost', '5432', and 'your_database_name' with your actual database details
-    url: jdbc:postgresql://localhost:5432/acct_db1
+    url: jdbc:postgresql://localhost:5432/exam_testdb
     username: postgres
     password: password
     driver-class-name: org.postgresql.Driver
