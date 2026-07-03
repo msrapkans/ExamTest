@@ -34,6 +34,18 @@ $ git checkout FETCH_HEAD
 
 
 
+Once Taking Specific commit and start working , while pushng error came and below to
+resolve the same
+
+git status
+git checkout -b temp-branch
+git checkout -B main
+git merge temp-branch
+git remote add ExamTest URL
+git push -u ExamTest main
+
+
+
 Test Data
 
 {
