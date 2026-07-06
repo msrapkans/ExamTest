@@ -1,9 +1,11 @@
 package com.example.demo.config;
 
+import com.example.demo.dtos.ApiError;
 import com.example.demo.security.JwtAuthenticationFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -49,14 +51,34 @@ public class SecurityConfig {
                     response.setContentType("application/json");
 
                     String message = "unauthorized access: " + authException.getMessage();
-                    Map<String, String> errorMap = Map.of(
-                            "message", message,
-                            "status", "401",
-                            "statusCode", "401"
-                    );
+                    String error = (String) request.getAttribute("error");
+                    if (error != null) {
+                        message = error;
+                    }
+//                    Map<String, String> errorMap = Map.of(
+//                            "message", message,
+//                            "status", "401",
+//                            "statusCode", "401"
+//                    );
 
+                    var apiError = ApiError.of(HttpStatus.UNAUTHORIZED.value(), "Unauthorized Access", message, request.getRequestURI(), true);
                     var objectMapper = new ObjectMapper();
-                    response.getWriter().write(objectMapper.writeValueAsString(errorMap));
+                    response.getWriter().write(objectMapper.writeValueAsString(apiError));
+                }).accessDeniedHandler((request, response, e) -> {
+
+                    response.setStatus(403);
+                    response.setContentType("application/json");
+                    String message = e.getMessage();
+                    String error = (String) request.getAttribute("error");
+                    if (error != null) {
+                        message = error;
+                    }
+                    var apiError = ApiError.of(HttpStatus.FORBIDDEN.value(), "Forbidden Access", message, request.getRequestURI(), true);
+                    var objectMapper = new ObjectMapper();
+                    response.getWriter().write(objectMapper.writeValueAsString(apiError));
+
+//                    var objectMapper = new ObjectMapper();
+//                    response.getWriter().write(objectMapper.writeValueAsString(errorMap));
                 }))
                 // 3. Now this will safely evaluate without throwing a NullPointerException
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
