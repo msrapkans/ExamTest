@@ -3,6 +3,8 @@ package com.example.demo.controllers;
 import com.example.demo.dtos.LoginRequest;
 import com.example.demo.dtos.TokenResponse;
 import com.example.demo.dtos.UserDto;
+import com.example.demo.entities.RefreshToken;
+import com.example.demo.repositories.RefreshTokenRepository;
 import com.example.demo.repositories.UserRepository;
 import com.example.demo.security.JwtService;
 import com.example.demo.services.AuthService;
@@ -35,6 +37,7 @@ public class AuthController {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final ModelMapper mapper;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @PostMapping("/login")
     public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest loginRequest, HttpServletResponse response) {
@@ -47,29 +50,29 @@ public class AuthController {
         }
 
 
-//        String jti = UUID.randomUUID().toString();
-//        var refreshTokenOb = RefreshToken.builder()
-//                .jti(jti)
-//                .user(user)
-//                .createdAt(Instant.now())
-//                .expiresAt(Instant.now().plusSeconds(jwtService.getRefreshTtlSeconds()))
-//                .revoked(false)
-//                .build();
-//
-//        //refresh token save--information
-//        refreshTokenRepository.save(refreshTokenOb);
+        String jti = UUID.randomUUID().toString();
+        var refreshTokenOb = RefreshToken.builder()
+                .jti(jti)
+                .user(user)
+                .createdAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(jwtService.getRefreshTtlSeconds()))
+                .revoked(false)
+                .build();
+
+        //refresh token save--information
+        refreshTokenRepository.save(refreshTokenOb);
 
 
         //access token--generate
         String accessToken = jwtService.generateAccessToken(user);
-//        String refreshToken = jwtService.generateRefreshToken(user, refreshTokenOb.getJti());
+        String refreshToken = jwtService.generateRefreshToken(user, refreshTokenOb.getJti());
 
         // use cookie service to attach refresh token in cookie
 
 //        cookieService.attachRefreshCookie(response, refreshToken, (int) jwtService.getRefreshTtlSeconds());
 //        cookieService.addNoStoreHeaders(response);
 
-        TokenResponse tokenResponse = TokenResponse.of(accessToken, "", jwtService.getAccessTtlSeconds(), mapper.map(user, UserDto.class));
+        TokenResponse tokenResponse = TokenResponse.of(accessToken, refreshToken, jwtService.getAccessTtlSeconds(), mapper.map(user, UserDto.class));
         return ResponseEntity.ok(tokenResponse);
 
     }
