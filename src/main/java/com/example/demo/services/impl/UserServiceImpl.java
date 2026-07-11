@@ -16,16 +16,15 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-
     private final UserRepository userRepository;
     private final ModelMapper modelMapper;
-
     private final RoleRepository roleRepository;
 
     @Override
@@ -37,19 +36,21 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByEmail(userDto.getEmail())) {
             throw new IllegalArgumentException("User with given email already exists");
         }
-        // if you have extra checks __put here...
+
         User user = modelMapper.map(userDto, User.class);
         user.setProvider(userDto.getProvider() != null ? userDto.getProvider() : Provider.LOCAL);
-        //role assign here to user___for authorization
 
-        //TODO:
-        //assign the default role
+        // FIX: Ensure the internal collection is never null after mapping
+        if (user.getRoles() == null) {
+            user.setRoles(new HashSet<>());
+        }
 
-//        Role role = roleRepository.findByName("ROLE_" + AppConstants.GUEST_ROLE).orElse(null);
-//        user.getRoles().add(role);
+        // Fetch and assign the default guest role safely
+        String roleName = "ROLE_" + AppConstants.GUEST_ROLE;
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new ResourceNotFoundException("Default Role not found in database: " + roleName));
 
-
-
+        user.getRoles().add(role);
 
         User savedUser = userRepository.save(user);
         return modelMapper.map(savedUser, UserDto.class);
@@ -57,7 +58,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto getUserByEmail(String email) {
-
         User user = userRepository
                 .findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with given email id "));
@@ -70,14 +70,15 @@ public class UserServiceImpl implements UserService {
         User existingUser = userRepository
                 .findById(uId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with given id"));
-        //we are not going to change email id for this project.
+
         if (userDto.getName() != null) existingUser.setName(userDto.getName());
         if (userDto.getImage() != null) existingUser.setImage(userDto.getImage());
         if (userDto.getProvider() != null) existingUser.setProvider(userDto.getProvider());
-        //TODO: change password updation logic...
         if (userDto.getPassword() != null) existingUser.setPassword(userDto.getPassword());
+
         existingUser.setEnable(userDto.isEnable());
         existingUser.setUpdatedAt(Instant.now());
+
         User updatedUser = userRepository.save(existingUser);
         return modelMapper.map(updatedUser, UserDto.class);
     }
@@ -85,13 +86,15 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteUser(String userId) {
         UUID uId = UserHelper.parseUUID(userId);
-        User user = userRepository.findById(uId).orElseThrow(() -> new ResourceNotFoundException("User not found with given id"));
+        User user = userRepository.findById(uId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with given id"));
         userRepository.delete(user);
     }
 
     @Override
     public UserDto getUserById(String userId) {
-        User user = userRepository.findById(UserHelper.parseUUID(userId)).orElseThrow(() -> new ResourceNotFoundException("User not found with given id"));
+        User user = userRepository.findById(UserHelper.parseUUID(userId))
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with given id"));
         return modelMapper.map(user, UserDto.class);
     }
 
